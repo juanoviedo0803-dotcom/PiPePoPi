@@ -4,9 +4,9 @@ let reconnectDelay = 10000 // empieza en 10s
 
 function createBot() {
   const bot = mineflayer.createBot({
-    host: "mc.ultranetwork.net",
+    host: "supercraft.es",
     port: 25565,
-    username: "lematadorsss",
+    username: "PiPePoPi",
     version: "1.8.9"
   })
 
@@ -38,12 +38,12 @@ function createBot() {
 
     setTimeout(() => {
       const item = window.slots.find(
-        (i) => i && i.name.includes("pickaxe")
+        (i) => i && i.name.includes("axe")
       )
 
       if (item) {
         const slot = window.slots.indexOf(item)
-        console.log(`⛏️ Pico encontrado en slot ${slot}, seleccionando...`)
+        console.log(`Hacha encontrado en slot ${slot}, seleccionando...`)
 
         bot.clickWindow(slot, 0, 0)
           .then(() => {
