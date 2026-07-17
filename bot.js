@@ -25,7 +25,7 @@ function createBot() {
 
     setTimeout(() => {
       try {
-        bot.activateItem()
+        bot.rightclick()
         console.log("🧭 Usando brújula")
       } catch (e) {
         console.log("⚠️ No se pudo usar la brújula")
