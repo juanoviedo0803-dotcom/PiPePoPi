@@ -66,4 +66,34 @@ function createBot() {
         await bot.clickWindow(axe.slot, 0, 0)
         await bot.closeWindow(window)
         await new Promise(r => setTimeout(r, 300))
-        const axeInInv = bot.inventory.slots.find(s => s && (s.name === "iron_axe"
+        const axeInInv = bot.inventory.slots.find(s => s && (s.name === "iron_axe" || s.name === "minecraft:iron_axe"))
+        if (axeInInv) {
+          await bot.equip(axeInInv, 'hand')
+          console.log("[AXE] Equipada OK")
+        }
+      } else {
+        console.log("[AXE] No encontrada")
+        await bot.closeWindow(window)
+      }
+    } catch (err) {
+      console.error("[AXE] Error:", err.message)
+      try { await bot.closeWindow(window) } catch (e) {}
+    }
+  })
+
+  bot.on("end", () => {
+    console.log("[END] Desconectado")
+    setTimeout(() => createBot(), reconnectDelay)
+    reconnectDelay = Math.min(reconnectDelay + 5000, 60000)
+  })
+
+  bot.on("error", (err) => console.log("[ERROR]", err.message))
+  bot.on("chat", (username, message) => {
+    if (username === bot.username) return
+    console.log("[CHAT]", username + ":", message)
+  })
+}
+
+console.log("[START] Bot iniciado")
+createBot()
+setInterval(() => {}, 30000)
