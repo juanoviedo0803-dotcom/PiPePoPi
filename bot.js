@@ -23,16 +23,12 @@ function createBot() {
       console.log("🔑 Enviando /login")
     }, 3000)
 
-    setTimeout(() => {
-      try {
-        bot.rightclick()
-        console.log("🧭 Usando Reloj")
-      } catch (e) {
-        console.log("⚠️ No se pudo usar la brújula")
-      }
-    }, 7000)
-  })
+    // Opción A: Activar el item que tienes en la mano
+bot.activateItem()
 
+// Opción B: Usar el item en un bloque o entidad específica
+bot.useOn(target) // target debe ser un bloque o entidad válida
+setTimeout(() => { bot.rightclick() }, 7000) // Intenta usar brújula a los 7s
   bot.on("windowOpen", (window) => {
     console.log("📦 Menú abierto")
 
