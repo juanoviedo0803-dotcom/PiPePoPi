@@ -1,5 +1,15 @@
 const mineflayer = require("mineflayer")
 
+// ✅✅✅ AGREGA ESTO JUSTO DESPUÉS DE LOS REQUIRE ✅✅✅
+const log = (msg) => {
+  const timestamp = new Date().toISOString()
+  const output = `[${timestamp}] ${msg}`
+  console.log(output)
+  console.error(output)        // Duplicar en stderr ayuda en Railway
+  process.stdout.write(output + '\n') // Forzar flush inmediato
+}
+// ✅✅✅ FIN DEL CÓDIGO DE LOG ✅✅✅
+
 let reconnectDelay = 10000
 
 function createBot() {
@@ -7,140 +17,120 @@ function createBot() {
     host: "supercraft.es",
     port: 25565,                                              
     username: "PiPePoPi",
-    version: "1.8.9"
+    version: "1.8.9",
+    auth: "offline"  // ✅ Importante para servidores cracked
   })
 
+  // 🔥 Ahora usa log() en vez de console.log()
   bot.on("login", () => {
-    console.log("✅ Bot conectado al servidor")
+    log("✅ Bot conectado al servidor")  // ← Cambiado
     reconnectDelay = 10000
   })
 
   bot.on("spawn", () => {
-    console.log("🎮 Bot apareció en el mundo")
+    log("🎮 Bot apareció en el mundo")   // ← Cambiado
 
-    // 🔑 Login
     setTimeout(() => {
       bot.chat("/login juan123")
-      console.log("🔑 Enviando /login")
+      log("🔑 Enviando /login")          // ← Cambiado
     }, 3000)
 
-    // 🕐 PASO 1: Buscar reloj y hacer click derecho
-    setTimeout(async () => {
+    setTimeout(() => {
       try {
-        console.log("🔍 Buscando minecraft:clock en el inventario...")
+        log("🔍 Buscando minecraft:clock...")  // ← Cambiado
         
-        // 🔎 Buscar el reloj en TODO el inventario (incluye hotbar)
+        // 🔎 Buscar reloj en inventario
         const clock = bot.inventory.items().find(item => 
-          item && item.name === "clock" // Nombre exacto en mineflayer 1.8.9
+          item && item.name === "clock"
         )
 
         if (clock) {
-          console.log(`⏰ Reloj encontrado: slot ${clock.slot}`)
+          log(`⏰ Reloj encontrado: slot ${clock.slot}`)  // ← Cambiado
           
-          // ✅ Si el reloj está en la hotbar (slots 36-44), seleccionarlo
           if (clock.slot >= 36 && clock.slot <= 44) {
-            const hotbarSlot = clock.slot - 36 // Convertir a 0-8
+            const hotbarSlot = clock.slot - 36
             bot.setQuickBarSlot(hotbarSlot)
-            console.log(`🎯 Reloj seleccionado en hotbar slot ${hotbarSlot}`)
             
-            // ✅ Click derecho = activateItem()
             setTimeout(() => {
               bot.activateItem()
-              console.log("🖱️ Click derecho en reloj realizado - esperando menú...")
+              log("🖱️ Click derecho en reloj realizado")  // ← Cambiado
             }, 300)
-          } else {
-            // Si no está en hotbar, equiparlo primero
-            await bot.equip(clock, 'hand')
-            bot.activateItem()
-            console.log("🖱️ Reloj equipado y activado - esperando menú...")
           }
         } else {
-          console.log("⚠️ No se encontró minecraft:clock en el inventario")
-          // 🔍 DEBUG: Mostrar qué hay en la hotbar
+          log("⚠️ No se encontró minecraft:clock")  // ← Cambiado
           const hotbar = bot.inventory.slots.slice(36, 45)
-          console.log("🎒 Hotbar:", hotbar.map(i => i?.name || "vacío").join(" | "))
+          log(`🎒 Hotbar: ${hotbar.map(i => i?.name || "vacío").join(" | ")}`)  // ← Cambiado
         }
       } catch (e) {
-        console.log("⚠️ Error al usar el reloj:", e.message)
+        log("⚠️ Error al usar reloj: " + e.message)  // ← Cambiado
       }
     }, 7000)
   })
 
-  // 📦 PASO 2: Menú abierto → Buscar hacha de hierro → Click derecho → BoxPvP
   bot.on("windowOpen", (window) => {
-    console.log(`📦 Menú abierto: "${window.title}"`)
+    log(`📦 Menú abierto: "${window.title}"`)  // ← Cambiado
     
-    // 🔍 DEBUG: Mostrar todos los ítems del menú
-    console.log("🔎 Ítems disponibles:")
-    window.slots.filter(i => i).forEach(item => {
-      console.log(`  [${item.slot}] ${item.name} | "${item.displayName}"`)
-    })
+    // 🔍 Debug: mostrar ítems del menú
+    const items = window.slots.filter(i => i).map(i => `[${i.slot}]${i.name}`)
+    log(`🔎 Ítems: ${items.join(", ")}`)  // ← Cambiado
 
     setTimeout(() => {
-      // ✅ Buscar el hacha de hierro por nombre exacto
       const ironAxe = window.slots.find(item => 
         item && item.name === "iron_axe"
       )
 
       if (ironAxe) {
-        console.log(`🪓 Hacha encontrada: slot ${ironAxe.slot} | "${ironAxe.displayName}"`)
+        log(`🪓 Hacha encontrada: slot ${ironAxe.slot}`)  // ← Cambiado
         
         // ✅ CLICK DERECHO: mouseButton = 1
         bot.clickWindow(ironAxe.slot, 1, 0)
           .then(() => {
-            console.log("✅ Click derecho en BoxPvP realizado")
-            console.log("🎉 Esperando teletransporte a BoxPvP...")
-            
-            // Cerrar ventana para evitar conflictos
+            log("✅ Click derecho en BoxPvP realizado")  // ← Cambiado
             setTimeout(() => {
-              if (bot.currentWindow) {
-                bot.closeWindow(bot.currentWindow)
-                console.log("🔒 Menú cerrado")
-              }
+              if (bot.currentWindow) bot.closeWindow(bot.currentWindow)
             }, 1000)
           })
           .catch((err) => {
-            console.log("❌ Error al hacer click en el hacha:", err.message)
+            log("❌ Error al hacer click: " + err.message)  // ← Cambiado
           })
       } else {
-        console.log("⚠️ No se encontró minecraft:iron_axe en el menú")
-        
-        // 💡 Buscar por displayName si el nombre no coincide
-        const axeByDisplay = window.slots.find(i => 
-          i?.displayName?.toLowerCase().includes("box") || 
-          i?.displayName?.toLowerCase().includes("pvp")
-        )
-        if (axeByDisplay) {
-          console.log(`💡 ¿Quizás es este? [${axeByDisplay.slot}] "${axeByDisplay.displayName}"`)
-        }
+        log("⚠️ No se encontró minecraft:iron_axe")  // ← Cambiado
       }
     }, 1500)
   })
 
-  // 🎁 Bonus: Detectar cuando entra a BoxPvP
+  // 💬 Mensajes del servidor (para debug)
   bot.on('messagestr', (msg) => {
-    const lower = msg.toLowerCase()
-    if (lower.includes("box") && lower.includes("pvp")) {
-      console.log(`🎯 ¡Éxito! Servidor: ${msg}`)
-    }
-    if (lower.includes("teleport") || lower.includes("join") || lower.includes("unido")) {
-      console.log(`📨 ${msg}`)
+    if (msg.toLowerCase().includes("box") || msg.toLowerCase().includes("pvp")) {
+      log(`🎯 Servidor: ${msg}`)  // ← Cambiado
     }
   })
 
   bot.on("end", () => {
-    console.log("❌ Bot desconectado")
-    console.log(`🔄 Reconectando en ${reconnectDelay / 1000}s...`)
+    log("❌ Bot desconectado")  // ← Cambiado
+    log(`🔄 Reconectando en ${reconnectDelay / 1000}s...`)  // ← Cambiado
     setTimeout(() => createBot(), reconnectDelay)
     reconnectDelay = Math.min(reconnectDelay + 5000, 60000)
   })
 
   bot.on("error", (err) => {
-    console.log("⚠️ Error:", err.message)
+    log("⚠️ Error: " + err.message)  // ← Cambiado
   })
 }
 
+// ✅ Heartbeat para Railway (mantiene el proceso "vivo")
+setInterval(() => {
+  log("💓 Heartbeat: bot alive")  // ← Cambiado
+}, 10000)
+
+// ✅ Manejar cierre de Railway
+process.on('SIGTERM', () => {
+  log('🛑 Cerrando bot...')  // ← Cambiado
+  process.exit(0)
+})
+
+// Iniciar bot
 createBot()
 
-// Keep-alive para Railway
+// Keep-alive extra para Railway
 setInterval(() => {}, 30000)
