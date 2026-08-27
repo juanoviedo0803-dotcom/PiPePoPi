@@ -4,7 +4,7 @@ let reconnectDelay = 10000
 
 function createBot() {
   const bot = mineflayer.createBot({
-    host: "supercraft.es",
+    host: "mc.supercraft.fun",
     port: 25565,
     username: "PiPePoPi",
     version: "1.8.9"
@@ -18,37 +18,51 @@ function createBot() {
   bot.on("spawn", () => {
     console.log("🎮 Bot apareció en el mundo")
 
-    // 🔑 Login después de spawn
+    // 🔑 Login
     setTimeout(() => {
       bot.chat("/login juan123")
       console.log("🔑 Enviando /login")
     }, 3000)
 
-    // 🧭 PASO 1: Seleccionar brújula del hotbar (slot 0) y activarla
-    setTimeout(() => {
+    // 🕐 PASO 1: Click derecho en la brújula (slot 0 del hotbar)
+    setTimeout(async () => {
       try {
-        console.log("🧭 Seleccionando brújula en hotbar slot 0...")
+        console.log("🕐 Buscando minecraft:clock en hotbar...")
         
-        // ✅ Seleccionar el slot 0 de la hotbar (0-8)
-        bot.setQuickBarSlot(0)
+        // Verificar qué hay en el hotbar (slots 36-44 del inventario)
+        const hotbar = bot.inventory.slots.slice(36, 45)
+        console.log("🎒 Hotbar:", hotbar.map(i => i?.name || "vacío"))
         
-        // ✅ Activar el ítem equipado (usar brújula)
-        setTimeout(() => {
-          bot.activateItem()
-          console.log("✨ Brújula activada - esperando menú de modos...")
-        }, 500) // Pequeña pausa para que el servidor registre el cambio de slot
+        // Buscar la brújula/reloj en el hotbar
+        const clock = hotbar.find(item => 
+          item && (item.name === "clock" || item.name === "compass" || item.type === 345)
+        )
 
+        if (clock) {
+          console.log(`🕐 Brújula encontrada en slot ${clock.slot - 36} del hotbar`)
+          
+          // ✅ Seleccionar el slot en la hotbar
+          bot.setQuickBarSlot(clock.slot - 36) // Convertir slot interno a hotbar (0-8)
+          
+          // ✅ Click derecho con el ítem equipado (activateItem = right-click)
+          setTimeout(() => {
+            bot.activateItem()
+            console.log("🖱️ Click derecho en brújula realizado - esperando menú...")
+          }, 300)
+        } else {
+          console.log("⚠️ No se encontró brújula/reloj en el hotbar")
+        }
       } catch (e) {
         console.log("⚠️ Error al usar brújula:", e.message)
       }
     }, 7000)
   })
 
-  // 📦 PASO 2: Cuando se abre el menú de modos de juego
+  // 📦 PASO 2: Cuando se abre el menú - Click derecho en el hacha
   bot.on("windowOpen", (window) => {
     console.log(`📦 Menú abierto: "${window.title}"`)
     
-    // 🔍 DEBUG: Ver todos los ítems del menú (para identificar el slot del hacha)
+    // 🔍 DEBUG: Ver todos los ítems del menú
     console.log("🔎 Ítems en el menú:")
     window.slots.forEach((item, index) => {
       if (item) {
@@ -57,11 +71,11 @@ function createBot() {
     })
 
     setTimeout(() => {
-      // ✅ Buscar el hacha de hierro por nombre o tipo
+      // Buscar el hacha de hierro
       const ironAxe = window.slots.find(item => 
         item && (
           item.name === "iron_axe" || 
-          item.type === 258 || // ID del iron_axe en 1.8.9
+          item.type === 258 ||
           item.displayName?.toLowerCase().includes("box") ||
           item.displayName?.toLowerCase().includes("pvp")
         )
@@ -70,23 +84,22 @@ function createBot() {
       if (ironAxe) {
         console.log(`✅ Hacha encontrada: slot ${ironAxe.slot} | "${ironAxe.displayName}"`)
         
-        // ✅ Click en el ítem usando SU slot real (no indexOf)
-        bot.clickWindow(ironAxe.slot, 0, 0)
+        // ✅ CLICK DERECHO en el hacha (mouseButton = 1 es right-click)
+        bot.clickWindow(ironAxe.slot, 1, 0)
           .then(() => {
-            console.log("🎯 Click realizado en BoxPvP - esperando teletransporte...")
-            // Cerrar ventana después de confirmar el click
+            console.log("🖱️ Click derecho en BoxPvP realizado - esperando teletransporte...")
+            // Cerrar ventana después
             setTimeout(() => {
               if (bot.currentWindow) bot.closeWindow(bot.currentWindow)
             }, 1000)
           })
           .catch(err => {
-            console.log("❌ Error al hacer click:", err.message)
+            console.log("❌ Error al hacer click derecho:", err.message)
           })
       } else {
-        console.log("⚠️ No se encontró el hacha de hierro / BoxPvP")
-        console.log("💡 Tip: Revisa los logs de arriba para ver el nombre exacto del ítem")
+        console.log("⚠️ No se encontró minecraft:iron_axe en el menú")
       }
-    }, 1500) // Esperar a que el menú se renderice completamente
+    }, 1500)
   })
 
   bot.on("end", () => {
@@ -100,7 +113,7 @@ function createBot() {
     console.log("⚠️ Error:", err.message)
   })
   
-  // 🎁 Bonus: Escuchar mensajes del servidor para debug
+  // 📨 Mensajes del servidor
   bot.on('messagestr', (msg) => {
     if (msg.includes("Box") || msg.includes("PvP") || msg.includes("teleport")) {
       console.log(`📨 Servidor: ${msg}`)
