@@ -107,4 +107,11 @@ function createBot() {
     reconnectDelay = Math.min(reconnectDelay + 5000, 60000)
   })
   
-  bot.on
+  bot.on("error", (err) => console.log("[ERROR]", err.message))
+  bot.on("chat", (u, m) => { if(u !== bot.username) console.log("[CHAT]", u+":"+m) })
+}
+
+console.log("[START] Bot iniciado - mc.supercraft.es:25565")
+console.log("[START] Hora:", new Date().toLocaleString())
+createBot()
+setInterval(() => {}, 30000)
