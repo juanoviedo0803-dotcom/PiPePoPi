@@ -22,13 +22,11 @@ function createBot() {
   bot.on("spawn", async () => {
     console.log("[SPAWN] En el mundo")
 
-    // Paso 1: Login del servidor
     setTimeout(() => {
       bot.chat("/login juan123")
       console.log("[ACTION] /login enviado")
     }, 3000)
 
-    // Paso 2: Usar reloj (12 segundos después del spawn)
     setTimeout(async () => {
       console.log("[CLOCK] Buscando reloj...")
       const clockId = bot.registry.itemsByName.clock?.id
@@ -46,35 +44,26 @@ function createBot() {
           console.log("[CLOCK] Error:", e.message)
         }
       } else {
-        console.log("[CLOCK] Sin reloj. Items:", 
-          bot.inventory.slots.filter(s => s).map(s => s.name).slice(0, 8).join(", ") || "VACIO")
+        console.log("[CLOCK] Sin reloj")
       }
     }, 12000)
 
-    // Paso 3: Intentar abrir menú de hacha (18 segundos)
     setTimeout(() => {
-      console.log("[MENU] Abriendo menu de selección...")
-      // CAMBIA ESTO por el comando real de tu servidor:
-      // bot.chat("/selector")
-      // bot.chat("/kit")
-      // bot.chat("/classes")
-      // bot.chat("/menu")
+      console.log("[MENU] Abriendo menu...")
     }, 18000)
   })
 
-  // Cuando se abre cualquier ventana
   bot.on("windowOpen", async (window) => {
-    console.log("[WINDOW] Abierta - Tipo:", window.type, "Titulo:", window.title || "N/A")
+    console.log("[WINDOW] Abierta - Tipo:", window.type)
     const items = window.slots.filter(s => s).map(s => s.name + "[slot:" + s.slot + "]")
-    console.log("[WINDOW] Items:", items.join(", ") || "(vacío)")
+    console.log("[WINDOW] Items:", items.join(", ") || "(vacio)")
 
     try {
       await new Promise(r => setTimeout(r, 500))
-
-      // Buscar hacha con nombres posibles
-      const axe = window.slots.find(slot => 
-        slot && (slot.name === "iron_axe" || slot.name === "minecraft:iron_axe")
-      )
-
+      const axe = window.slots.find(slot => slot && (slot.name === "iron_axe" || slot.name === "minecraft:iron_axe"))
       if (axe) {
         console.log("[AXE] Encontrada en slot", axe.slot)
+        await bot.clickWindow(axe.slot, 0, 0)
+        await bot.closeWindow(window)
+        await new Promise(r => setTimeout(r, 300))
+        const axeInInv = bot.inventory.slots.find(s => s && (s.name === "iron_axe"
