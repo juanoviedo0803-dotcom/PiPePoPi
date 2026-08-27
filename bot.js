@@ -1,6 +1,6 @@
 const mineflayer = require("mineflayer")
 
-let reconnectDelay = 10000 // empieza en 10s
+let reconnectDelay = 10000
 
 function createBot() {
   const bot = mineflayer.createBot({
@@ -12,49 +12,77 @@ function createBot() {
 
   bot.on("login", () => {
     console.log("✅ Bot conectado al servidor")
-    reconnectDelay = 10000 // resetear delay cuando conecta bien
+    reconnectDelay = 10000
   })
 
-  bot.on("spawn", () => {
+  bot.on("spawn", async () => {
     console.log("🎮 Bot apareció en el mundo")
 
+    // 🔑 Login
     setTimeout(() => {
       bot.chat("/login juan123")
       console.log("🔑 Enviando /login")
     }, 3000)
 
-    setTimeout(() => {
+    // 🧭 Usar brújula para abrir menú de modos
+    setTimeout(async () => {
       try {
-        bot.rightclick()
-        console.log("🧭 Usando brújula")
+        console.log("🔍 Buscando brújula en inventario...")
+        
+        // Buscar la brújula en el inventario (type 345 = compass en 1.8.9)
+        const compass = bot.inventory.items().find(item => 
+          item && (item.name === "compass" || item.type === 345)
+        )
+
+        if (!compass) {
+          console.log("⚠️ No se encontró brújula en el inventario")
+          return
+        }
+
+        // Equipar la brújula en la mano principal
+        await bot.equip(compass, 'hand')
+        console.log("🧭 Brújula equipada")
+
+        // Activar la brújula (esto debería abrir el menú)
+        bot.activateItem()
+        console.log("✨ Brújula activada - esperando menú...")
+
       } catch (e) {
-        console.log("⚠️ No se pudo usar la brújula")
+        console.log("⚠️ Error al usar la brújula:", e.message)
       }
     }, 7000)
   })
 
+  // 📦 Cuando se abre una ventana (menú de modos)
   bot.on("windowOpen", (window) => {
-    console.log("📦 Menú abierto")
+    console.log(`📦 Menú abierto: "${window.title}"`)
+    
+    // 🔍 DEBUG: Imprimir todos los ítems del menú (útil para encontrar el slot correcto)
+    window.slots.forEach((slot, i) => {
+      if (slot) console.log(`  [${i}] ${slot.name} (type: ${slot.type}) x${slot.count}`)
+    })
 
     setTimeout(() => {
-      const item = window.slots.find(
-        (i) => i && i.name.includes("minecraft:iron_axe")
+      // Buscar el hacha de hierro (BoxPvP)
+      const ironAxe = window.slots.find(item => 
+        item && (item.name === "iron_axe" || item.type === 258 || item.displayName?.includes("Box"))
       )
 
-      if (item) {
-        const slot = window.slots.indexOf(item)
-        console.log(`Hacha encontrado en slot ${slot}, seleccionando...`)
-
-        bot.clickWindow(slot, 0, 0)
+      if (ironAxe) {
+        console.log(`✅ Hacha encontrada en slot ${ironAxe.slot}`)
+        
+        // ⚠️ IMPORTANTE: Usar item.slot, NO indexOf()
+        bot.clickWindow(ironAxe.slot, 0, 0)
           .then(() => {
-            console.log("✅ Modo seleccionado")
+            console.log("🎯 Click realizado - esperando teletransporte...")
+            // Cerrar ventana después de un momento
+            setTimeout(() => bot.closeWindow(window), 1000)
           })
-          .catch((err) => {
+          .catch(err => {
             console.log("❌ Error al hacer click:", err.message)
           })
-
       } else {
-        console.log("⚠️ No se encontró ningún pico en el menú")
+        console.log("⚠️ No se encontró el hacha de hierro / BoxPvP en el menú")
       }
     }, 1500)
   })
@@ -62,12 +90,7 @@ function createBot() {
   bot.on("end", () => {
     console.log("❌ Bot desconectado")
     console.log(`🔄 Reconectando en ${reconnectDelay / 1000}s...`)
-
-    setTimeout(() => {
-      createBot()
-    }, reconnectDelay)
-
-    // aumentar delay progresivamente (máx 60s)
+    setTimeout(() => createBot(), reconnectDelay)
     reconnectDelay = Math.min(reconnectDelay + 5000, 60000)
   })
 
@@ -76,10 +99,7 @@ function createBot() {
   })
 }
 
-// iniciar bot
 createBot()
 
-// mantener proceso vivo (Railway)
-setInterval(() => {
-  // keep alive sin spam
-}, 30000)
+// Keep-alive para Railway
+setInterval(() => {}, 30000)
