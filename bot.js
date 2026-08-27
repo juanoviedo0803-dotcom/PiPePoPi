@@ -38,7 +38,7 @@ function createBot() {
 
     setTimeout(() => {
       const item = window.slots.find(
-        (i) => i && i.name.includes("axe")
+        (i) => i && i.name.includes("minecraft:iron_axe")
       )
 
       if (item) {
