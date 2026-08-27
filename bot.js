@@ -2,12 +2,21 @@ const mineflayer = require("mineflayer")
 
 let reconnectDelay = 10000 // empieza en 10s
 
+// Prevención de crashes globales (Node.js)
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Promise no manejada:', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('❌ Error no capturado:', err.message)
+})
+
 function createBot() {
   const bot = mineflayer.createBot({
     host: "supercraft.es",
     port: 25565,
     username: "PiPePoPi",
-    version: "1.8.9"
+    version: "1.8.9",
+    auth: 'offline'  // ← CRÍTICO para servidores cracked como supercraft.es
   })
 
   bot.on("login", () => {
@@ -15,51 +24,43 @@ function createBot() {
     reconnectDelay = 10000 // resetear delay cuando conecta bien
   })
 
-  bot.on("spawn", () => {
+  bot.on("spawn", async () => {
     console.log("🎮 Bot apareció en el mundo")
 
+    // Enviar login después de 3 segundos
     setTimeout(() => {
       bot.chat("/login juan123")
       console.log("🔑 Enviando /login")
     }, 3000)
 
+    // Usar RELOJ después de 10 segundos (tiempo suficiente para login + spawn)
+    setTimeout(async () => {
+      try {
+        // Buscar RELOJ en el inventario (clock, NO compass)
+        const clockId = bot.registry.itemsByName.clock?.id
+        if (!clockId) {
+          console.log("⚠️ No se encontró ID de reloj en el registro")
+          return
+        }
 
-bot.on("windowOpen", async (window) => {
-  console.log("📦 Menú abierto")
-
-  try {
-    // Esperar un poco para que los slots se carguen
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // Buscar hacha de hierro por tipo (más fiable que name.includes)
-    const axeItem = window.slots.find(slot => 
-      slot && slot.name === "iron_axe" // o slot.type === ID_DEL_ITEM
-    )
-
-    if (axeItem) {
-      console.log(`🪓 Hacha encontrada en slot ${axeItem.slot}`)
-      
-      // Hacer click para recoger el item del contenedor
-      await bot.clickWindow(axeItem.slot, 0, 0)
-      
-      // Cerrar la ventana
-      await bot.closeWindow(window)
-      
-      // Equipar el item en la mano (usa el item original de tu inventario, no el de la ventana)
-      const itemInInventory = bot.inventory.slots.find(s => 
-        s && s.name === "iron_axe" && s.slot >= 36 && s.slot <= 44 // hotbar
-      )
-      
-      if (itemInInventory) {
-        await bot.equip(itemInInventory, 'hand')
-        console.log("✅ Hacha equipada en la mano")
+        const clock = bot.inventory.findInventoryItem(clockId)
+        
+        if (clock) {
+          // Equipar reloj en la mano
+          await bot.equip(clock, 'hand')
+          console.log("🕐 Reloj equipado")
+          
+          // Activar item (equivalente a right-click)
+          bot.activateItem()
+          console.log("✨ Reloj activado")
+        } else {
+          console.log("⚠️ No tienes reloj en el inventario")
+        }
+      } catch (e) {
+        console.log("⚠️ Error al usar el reloj:", e.message)
       }
-    } else {
-      console.log("⚠️ No se encontró hacha en el menú")
-      bot.closeWindow(window) // Siempre cerrar la ventana si no se encuentra nada
-    }
-  } catch (err) {
-    console.error("❌ Error en windowOpen:", err.message)
-    bot.closeWindow(window) // Asegurar cierre en caso de error
-  }
-})
+    }, 10000)
+  })
+
+  bot.on("windowOpen", async (window) => {
+    console.log("📦 Menú abierto -
