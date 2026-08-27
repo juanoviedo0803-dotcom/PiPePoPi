@@ -23,59 +23,43 @@ function createBot() {
       console.log("🔑 Enviando /login")
     }, 3000)
 
-    // Opción A: Activar el item que tienes en la mano
-bot.activateItem()
 
-// Opción B: Usar el item en un bloque o entidad específica
-bot.useOn(target) // target debe ser un bloque o entidad válida
-setTimeout(() => { bot.rightclick() }, 7000) // Intenta usar brújula a los 7s
-  bot.on("windowOpen", (window) => {
-    console.log("📦 Menú abierto")
+bot.on("windowOpen", async (window) => {
+  console.log("📦 Menú abierto")
 
-    setTimeout(() => {
-      const item = window.slots.find(
-        (i) => i && i.name.includes("minecraft:iron_axe")
+  try {
+    // Esperar un poco para que los slots se carguen
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Buscar hacha de hierro por tipo (más fiable que name.includes)
+    const axeItem = window.slots.find(slot => 
+      slot && slot.name === "iron_axe" // o slot.type === ID_DEL_ITEM
+    )
+
+    if (axeItem) {
+      console.log(`🪓 Hacha encontrada en slot ${axeItem.slot}`)
+      
+      // Hacer click para recoger el item del contenedor
+      await bot.clickWindow(axeItem.slot, 0, 0)
+      
+      // Cerrar la ventana
+      await bot.closeWindow(window)
+      
+      // Equipar el item en la mano (usa el item original de tu inventario, no el de la ventana)
+      const itemInInventory = bot.inventory.slots.find(s => 
+        s && s.name === "iron_axe" && s.slot >= 36 && s.slot <= 44 // hotbar
       )
-
-      if (item) {
-        const slot = window.slots.indexOf(item)
-        console.log(`Hacha encontrado en slot ${slot}, seleccionando...`)
-
-        bot.clickWindow(slot, 0, 0)
-          .then(() => {
-            console.log("✅ Modo seleccionado")
-          })
-          .catch((err) => {
-            console.log("❌ Error al hacer click:", err.message)
-          })
-
-      } else {
-        console.log("⚠️ No se encontró ningún pico en el menú")
+      
+      if (itemInInventory) {
+        await bot.equip(itemInInventory, 'hand')
+        console.log("✅ Hacha equipada en la mano")
       }
-    }, 1500)
-  })
-
-  bot.on("end", () => {
-    console.log("❌ Bot desconectado")
-    console.log(`🔄 Reconectando en ${reconnectDelay / 1000}s...`)
-
-    setTimeout(() => {
-      createBot()
-    }, reconnectDelay)
-
-    // aumentar delay progresivamente (máx 60s)
-    reconnectDelay = Math.min(reconnectDelay + 5000, 60000)
-  })
-
-  bot.on("error", (err) => {
-    console.log("⚠️ Error:", err.message)
-  })
-}
-
-// iniciar bot
-createBot()
-
-// mantener proceso vivo (Railway)
-setInterval(() => {
-  // keep alive sin spam
-}, 30000)
+    } else {
+      console.log("⚠️ No se encontró hacha en el menú")
+      bot.closeWindow(window) // Siempre cerrar la ventana si no se encuentra nada
+    }
+  } catch (err) {
+    console.error("❌ Error en windowOpen:", err.message)
+    bot.closeWindow(window) // Asegurar cierre en caso de error
+  }
+})
